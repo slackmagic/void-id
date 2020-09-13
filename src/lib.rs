@@ -10,7 +10,7 @@ const RANDOM_HASH_SIZE: usize = 32;
 pub type Seed = [u8; RANDOM_HASH_SIZE];
 
 #[derive(Error, Debug)]
-pub enum ObjectIdError {
+pub enum VoIdError {
     #[error("Impossible to generate a random hash")]
     GenerationImpossible,
     #[error("Impossible to get ID from String : impossible to convert string")]
@@ -20,37 +20,37 @@ pub enum ObjectIdError {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
-pub struct VOid {
+pub struct VoId {
     pub seed: Seed,
 }
 
-impl VOid {
+impl VoId {
     #[inline]
     pub fn new_empty() -> Self {
-        VOid::default()
+        VoId::default()
     }
 
     #[inline]
-    pub fn new() -> Result<Self, ObjectIdError> {
+    pub fn new() -> Result<Self, VoIdError> {
         let mut random = [0u8; RANDOM_HASH_SIZE];
         match getrandom(&mut random) {
-            Ok(_) => Ok(VOid { seed: random }),
-            Err(_) => Err(ObjectIdError::GenerationImpossible),
+            Ok(_) => Ok(VoId { seed: random }),
+            Err(_) => Err(VoIdError::GenerationImpossible),
         }
     }
 
     #[inline]
-    pub fn from_string(id: String) -> Result<Self, ObjectIdError> {
-        match VOid::hex_string_to_vec(&id) {
+    pub fn from_string(id: String) -> Result<Self, VoIdError> {
+        match VoId::hex_string_to_vec(&id) {
             Ok(vec) => match vec.len() == RANDOM_HASH_SIZE {
                 true => {
                     let mut seed = [0u8; RANDOM_HASH_SIZE];
                     seed.clone_from_slice(vec.as_slice());
-                    Ok(VOid { seed: seed })
+                    Ok(VoId { seed: seed })
                 }
-                false => Err(ObjectIdError::CastFromStringImpossibleSize),
+                false => Err(VoIdError::CastFromStringImpossibleSize),
             },
-            Err(_) => Err(ObjectIdError::CastFromStringImpossibleDecode),
+            Err(_) => Err(VoIdError::CastFromStringImpossibleDecode),
         }
     }
 
@@ -62,14 +62,14 @@ impl VOid {
     }
 }
 
-impl AsRef<[u8]> for VOid {
+impl AsRef<[u8]> for VoId {
     #[inline]
     fn as_ref(&self) -> &[u8] {
         &self.seed
     }
 }
 
-impl ToString for VOid {
+impl ToString for VoId {
     #[inline(always)]
     fn to_string(&self) -> String {
         format!("{:02x}", self.seed.as_ref().iter().format(""))
@@ -81,7 +81,7 @@ mod tests {
     use super::*;
     #[test]
     fn generate_id() {
-        let id = VOid::new().unwrap();
+        let id = VoId::new().unwrap();
         println!("{:?}", id.to_string());
         println!("{:?}", id.to_string().len());
         assert_eq!(id.seed.len(), RANDOM_HASH_SIZE);
@@ -92,7 +92,7 @@ mod tests {
         let digest: String =
             "74dc1afb9a999c65b40e8e8d20cfa5651a6178b0280397419271fdc86439f6e2".to_owned();
 
-        let id = VOid::from_string(digest.clone()).unwrap();
+        let id = VoId::from_string(digest.clone()).unwrap();
         assert_eq!(id.to_string(), digest.to_owned());
         assert_eq!(id.seed.len(), 32);
     }
