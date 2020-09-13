@@ -7,7 +7,7 @@ use std::num::ParseIntError;
 use thiserror::Error;
 
 const RANDOM_HASH_SIZE: usize = 32;
-pub type Digest = [u8; RANDOM_HASH_SIZE];
+pub type Seed = [u8; RANDOM_HASH_SIZE];
 
 #[derive(Error, Debug)]
 pub enum ObjectIdError {
@@ -21,7 +21,7 @@ pub enum ObjectIdError {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ObjectId {
-    pub digest: Digest,
+    pub seed: Seed,
 }
 
 impl ObjectId {
@@ -29,7 +29,7 @@ impl ObjectId {
     pub fn new() -> Result<Self, ObjectIdError> {
         let mut random = [0u8; RANDOM_HASH_SIZE];
         match getrandom(&mut random) {
-            Ok(_) => Ok(ObjectId { digest: random }),
+            Ok(_) => Ok(ObjectId { seed: random }),
             Err(_) => Err(ObjectIdError::GenerationImpossible),
         }
     }
@@ -39,9 +39,9 @@ impl ObjectId {
         match ObjectId::hex_string_to_vec(&id) {
             Ok(vec) => match vec.len() == RANDOM_HASH_SIZE {
                 true => {
-                    let mut digest = [0u8; RANDOM_HASH_SIZE];
-                    digest.clone_from_slice(vec.as_slice());
-                    Ok(ObjectId { digest: digest })
+                    let mut seed = [0u8; RANDOM_HASH_SIZE];
+                    seed.clone_from_slice(vec.as_slice());
+                    Ok(ObjectId { seed: seed })
                 }
                 false => Err(ObjectIdError::CastFromStringImpossibleSize),
             },
@@ -60,14 +60,14 @@ impl ObjectId {
 impl AsRef<[u8]> for ObjectId {
     #[inline]
     fn as_ref(&self) -> &[u8] {
-        &self.digest
+        &self.seed
     }
 }
 
 impl ToString for ObjectId {
     #[inline(always)]
     fn to_string(&self) -> String {
-        format!("{:02x}", self.digest.as_ref().iter().format(""))
+        format!("{:02x}", self.seed.as_ref().iter().format(""))
     }
 }
 
@@ -79,7 +79,7 @@ mod tests {
         let id = ObjectId::new().unwrap();
         println!("{:?}", id.to_string());
         println!("{:?}", id.to_string().len());
-        assert_eq!(id.digest.len(), RANDOM_HASH_SIZE);
+        assert_eq!(id.seed.len(), RANDOM_HASH_SIZE);
     }
 
     #[test]
@@ -89,6 +89,6 @@ mod tests {
 
         let id = ObjectId::from_string(digest.clone()).unwrap();
         assert_eq!(id.to_string(), digest.to_owned());
-        assert_eq!(id.digest.len(), 32);
+        assert_eq!(id.seed.len(), 32);
     }
 }
